@@ -1,0 +1,15 @@
+{
+  "name": "nextags",
+  "description": "Skills da Nextags para o Claude Code",
+  "owner": {
+    "name": "Nextags"
+  },
+  "plugins": [
+    {
+      "name": "nextags",
+      "source": "./plugins/nextags",
+      "description": "Cria agentes de atendimento com IA para a Nextags: entrevista o dono do negócio, coleta produtos ou serviços e entrega a Mensagem do sistema, o Prompt da Ação e as Ações de IA.",
+      "version": "1.0.0"
+    }
+  ]
+}
