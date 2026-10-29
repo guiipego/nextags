@@ -3,6 +3,7 @@
 Caso que deu origem a esta skill. Use como régua de nível de detalhe e de consistência entre os 3 arquivos, sem copiar o conteúdo para outro negócio.
 
 - Segmento: sorveteria (franquia), objetivo *pedido* (bloco A), WhatsApp.
+- Modo de fechamento: 1, pré-confirma e transfere (`modos-de-fechamento.md`). A loja aceita Pix, mas a equipe manda a chave na confirmação. Para trocar o modo deste agente, siga a seção 9 de `modos-de-fechamento.md`: muda bem mais que a etapa 7 (IDENTIDADE, OBJETIVO, TRANSFERÊNCIA, EXEMPLOS, a regra 8 de *Pagamento*, as regras 1 e 1b e o Prompt da Ação).
 - Configuração do agente (padrão recomendado): os 4 tipos de resposta ligados (Texto, Imagem, Texto + Botões, Carrossel); GPT-6 Luna; Max tokens 32768; Reasoning effort Média; Verbosity Baixa.
 - Catálogo: 62 produtos coletados do site da rede pela API do WordPress + listagem JetEngine. 54 fotos em WebP (precisam virar JPG para o WhatsApp), 5 descrições corrigidas a partir da foto, 2 fotos repetidas marcadas como ilustrativas. Os links de ingredientes do site ficaram de fora: 49 das 62 páginas mostravam a composição de outro produto.
 - Formatação e carrossel seguem as regras testadas em produção (texto do carrossel numa mensagem de Texto logo antes do Carrossel).

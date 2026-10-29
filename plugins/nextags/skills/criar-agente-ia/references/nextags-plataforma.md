@@ -52,7 +52,7 @@ O texto do "Quando" é lido pelo modelo, junto com a conversa e a resposta atual
 | Definir Campo Personalizado | Salva um valor no contato (a IA preenche a partir da conversa) | Para guardar resumo do pedido, valor, endereço, motivo da transferência |
 | Limpar Campo Personalizado | Apaga um campo | Raramente necessário; campos são sobrescritos |
 | Seguir | Coloca o contato em acompanhamento | Para recuperar conversa abandonada, se o cliente quiser |
-| Remover do acompanhamento | Tira do acompanhamento | Junto com a pré-confirmação, se usar "Seguir" |
+| Remover do acompanhamento | Tira do acompanhamento | Junto com a regra principal (o fechamento), se usar "Seguir" |
 | Transferir conversa para bot | Devolve a conversa para a IA | Uso da equipe ao terminar o atendimento humano |
 | Arquivar | Arquiva a conversa | **Não** automatize: um erro some com um cliente real |
 | Bloquear contato | Bloqueia o contato | **Não** automatize: um erro bloqueia um cliente real |
@@ -113,8 +113,9 @@ Campos que costumam valer a pena:
 
 | Campo | Tipo | Gravado por | Lido pelo agente para |
 |---|---|---|---|
-| resumo_pedido | Texto | Regra de pré-confirmação | Atender "o mesmo de antes" |
-| valor_pedido | Número | Regra de pré-confirmação | Relatórios (não precisa ir ao prompt) |
+| resumo_pedido | Texto | Regra principal (o fechamento) | Atender "o mesmo de antes" |
+| valor_pedido | Número | Regra principal (o fechamento) | Relatórios (não precisa ir ao prompt) |
+| numero_pedido | Texto | Regra "Pedido registrado" (registro no sistema) | A equipe achar o pedido (não precisa ir ao prompt) |
 | endereco_entrega | Texto | Regra só de entrega | Oferecer o endereço da última vez |
 | motivo_transferencia | Texto | Regras de transferência antecipada | A equipe saber o motivo (não precisa ir ao prompt) |
 | servico_interesse / data_preferida | Texto | Regra de agendamento | Retomar o agendamento |
@@ -134,7 +135,7 @@ A plataforma faz a conversão por trás: o prompt **não** precisa (e não deve)
 Quando usar cada tipo:
 - **Tem fotos de produto ou serviço?** Use **Imagem**. No prompt: "envie a foto como imagem, usando a URL do campo Foto do catálogo, com a legenda *Nome* e o preço". O texto da resposta pode ir na própria legenda (uma mensagem só, em vez de foto + texto). Sem esse tipo ligado, a foto só sai como link no texto.
 - **Carrossel:** para mostrar de 2 a 10 itens de uma vez (o limite é 10 cards; de 3 a 6 costuma ficar melhor). Cada card tem a foto, um texto simples "Nome – R$ X,XX" (até 60 caracteres, sem asterisco) e, se houver link, um botão de URL (ex.: "Ver produto"). **O carrossel sempre vai com uma mensagem de Texto enviada logo antes, na mesma resposta** (o "texto do carrossel"): a Nextags junta as duas, e no WhatsApp o texto aparece em cima dos cards, como uma mensagem só. Sem essa mensagem de Texto, ou com o texto colocado dentro do carrossel, o WhatsApp mostra um "." no lugar do texto. O texto do carrossel diz o que foi separado e termina com a pergunta seguinte, e pode ter um 👇 no fim apontando para os cards.
-- **Texto + Botões:** para escolhas fechadas (Retirada / Entrega; Confirmar / Alterar). Use no máximo 3 botões com títulos curtos (até ~20 caracteres, limite do WhatsApp). Um clique num botão vale como resposta do cliente. Se o botão for de confirmação do resumo, ele conta como aprovação para a regra de pré-confirmação.
+- **Texto + Botões:** para escolhas fechadas (Retirada / Entrega; Confirmar / Alterar). Use no máximo 3 botões com títulos curtos (até ~20 caracteres, limite do WhatsApp). Um clique num botão vale como resposta do cliente. Se o botão for de confirmação do resumo, ele conta como aprovação para a regra principal. O botão de link (URL) é outro tipo e vai sozinho na mensagem: é o "Comprar agora" ou "Pagar agora" do fechamento (`modos-de-fechamento.md`).
 - **Arquivo:** para mandar cardápio em PDF, tabela de preços ou contrato, quando houver URL pública do arquivo.
 
 Limites oficiais por canal (doc "Tipos de arquivos e limites nos canais"):
@@ -166,7 +167,7 @@ Na entrevista, pergunte quais estão ligadas ou podem ser ligadas, e escreva no 
 | Ferramenta | O que faz | Quando vale a pena | O que escrever no prompt |
 |---|---|---|---|
 | **Arquivos** | Upload de PDFs, planilhas etc.; a IA consulta antes de responder | FAQ grande, políticas, manual técnico, tabela de preços enorme | "Para dúvidas sobre X, consulte os arquivos da base antes de responder; se não encontrar, diga que vai confirmar com a equipe." |
-| **Image Reader** | A IA entende imagens que o cliente envia | Cliente manda print do cardápio, foto do produto com defeito, foto do local para orçamento, comprovante | Dizer o que fazer com cada tipo de imagem. Comprovante de pagamento: **nunca** confirme o pagamento; agradeça e diga que a equipe confere |
+| **Image Reader** | A IA entende imagens que o cliente envia | Cliente manda print do cardápio, foto do produto com defeito, foto do local para orçamento, comprovante | Dizer o que fazer com cada tipo de imagem. Comprovante de pagamento: **nunca** confirme o pagamento; nos modos 3 e 4, quando a equipe confere pelo WhatsApp, responda com a mensagem fixa do comprovante (`modos-de-fechamento.md`); nos outros, agradeça e diga quem confere |
 | **Document Reader** | A IA lê PDFs e documentos que o cliente envia | Pedido de orçamento em PDF, lista de materiais, receita, guia de exame | Resumir e usar o conteúdo; em saúde, nunca interpretar exame ou receita |
 | **Web Search** | A IA pesquisa na web, limitada aos sites autorizados | Catálogo muda muito e está no site do cliente; detalhes/ingredientes nas páginas do produto | Autorize só o domínio do próprio negócio. "Use a pesquisa só no site X, para detalhes de produto. Preço e disponibilidade são os do catálogo." |
 | **Funções de IA** | Funções que a IA chama, como `connect_user_to_human` (transferir para humano) ou disparar um fluxo pela intenção | Quando o cliente prefere que a própria IA dispare a ação no meio da resposta | Ver o aviso logo abaixo |
@@ -191,10 +192,10 @@ Como escrever as instruções de MCP no system prompt (seção FERRAMENTAS do mo
 2. **Ordem obrigatória:** consultar antes de criar (Consultar_Agenda → oferecer 2 ou 3 horários → o cliente escolhe → confirmar os dados → Criar_Agendamento). Para reagendar, buscar antes.
 3. **Confirmação antes de ações que criam ou alteram algo:** o agente mostra o resumo e só chama a ferramenta depois do "sim" do cliente.
 4. **Dados obrigatórios:** quais pedir ao cliente (ex.: e-mail) e quais já existem (telefone: `{{phone}}`; nome: `{{first_name}}`). Datas em ISO 8601 calculadas a partir de `{{current_user_time}}`, com atenção ao fuso.
-5. **Sucesso e erro:** só diga "agendado" depois que a ferramenta retornar sucesso, e repita data, hora e link. Se der erro ou não houver horário, diga isso e ofereça transferir para a equipe.
+5. **Sucesso e erro:** só diga "agendado" depois que a ferramenta retornar sucesso, e repita data, hora e link. Se não houver horário, ofereça outros. Se a ferramenta der erro, tente mais uma vez; se falhar de novo, responda "Não consegui concluir por aqui agora." com a mensagem "Outros casos" (regra "Problema no fechamento", `modos-de-fechamento.md`, seção 2).
 6. **Limites:** o que a ferramenta não faz (ex.: cancelar) vai para o humano.
 
-Para e-commerce (Shopify e similares), o padrão é o mesmo: buscar produto, estoque e preço **na ferramenta**, e não num catálogo colado no prompt, que pode ficar velho. Consultar status de pedido pede um dado que identifique o cliente (número do pedido, e-mail) e nunca expõe pedidos de outra pessoa. Com MCP de catálogo, o CATÁLOGO do prompt pode ser só um resumo das categorias.
+Para e-commerce (Shopify e similares), o padrão é o mesmo: buscar produto, estoque e preço **na ferramenta**, e não num catálogo colado no prompt, que pode ficar velho. Consultar status de pedido pede um dado que identifique o cliente (número do pedido, e-mail) e nunca expõe pedidos de outra pessoa. Com MCP de catálogo, o CATÁLOGO do prompt pode ser só um resumo das categorias. Se a ferramenta monta o carrinho e devolve o link de checkout, o agente pode fechar a venda sozinho (modo 2 de `modos-de-fechamento.md`); se cria o pedido, modo 5.
 
 ## 9. Configurações do modelo
 
@@ -234,6 +235,12 @@ Quando o usuário voltar dos testes com um problema, procure aqui antes de qualq
 | O agente inventa preço, horário ou ingrediente | Dado ausente sem regra de `[A DEFINIR]`, ou descrição "de cabeça" | Marcar `[A DEFINIR]`/"a confirmar" e a regra de responder que a equipe confirma | 1 |
 | O agente não sabe se está aberto | `{{current_user_time}}` fora do prompt | Seção CONTEXTO DESTE ATENDIMENTO no final do prompt | 1 |
 | `{{campo}}` aparece cru na conversa | Nome do campo diferente do criado na Nextags | Conferir o nome exato do campo personalizado e ajustar os arquivos 1 e 3 | 1 e 3 |
+| Link de pagamento ou chave Pix errados, inventados ou "corrigidos" | O link ou a chave não estão no prompt, ou falta a regra de copiar sem alteração | Colocar o link ou a chave exatos nos DADOS ou no catálogo e usar a regra de *Pagamento* do modo (`modos-de-fechamento.md`, seção 2) | 1 |
+| O agente diz que o pagamento foi confirmado depois de um print ou de "já paguei" | Falta a regra de comprovante | Regra de *Pagamento*: "nunca confirme pagamento por comprovante; quem confere é a equipe"; nos modos 3 e 4, quando a equipe confere pelo WhatsApp, a mensagem fixa do comprovante no arquivo 1 e a regra "Comprovante recebido" no arquivo 3 | 1 e 3 |
+| O agente manda Pix ou link, mas o combinado era pré-confirmar e transferir (ou o contrário) | Sobras de outro modo de fechamento no prompt (etapa, regra de *Pagamento*, TRANSFERÊNCIA ou EXEMPLOS) | Aplicar a lista completa do topo de `modos-de-fechamento.md` e procurar as frases do modo antigo, inclusive nos EXEMPLOS (seção 9 de lá) | 1, 2 e 3 |
+| Depois de um erro no link, no checkout, no registro ou no Pix, a conversa não chega a ninguém | Falta a frase de erro ou a regra "Problema no fechamento" | Usar "Não consegui concluir por aqui agora." com a mensagem "Outros casos" e a regra da biblioteca | 1 e 3 |
+| O valor cobrado não bate com o pedido | Cobrou antes da aprovação ou não refez o resumo depois de uma mudança | "Só o total do último resumo aprovado"; mudou o pedido: pergunte se já pagou; se não, resumo novo e link ou valor novo; se já pagou, transfira (`modos-de-fechamento.md`, seção 2) | 1 |
+| Link de checkout não chega ou dá erro | A ferramenta da loja falhou ou não está ligada no agente | Ligar o servidor MCP no agente; no prompt, a frase de erro com a mensagem "Outros casos"; no arquivo 3, a regra "Problema no fechamento" | config., 1 e 3 |
 
 Se o sintoma não estiver na tabela, pergunte ao usuário o que ele esperava ver (um print ajuda) e ajuste a instrução em texto simples. Não procure a resposta na central de ajuda.
 

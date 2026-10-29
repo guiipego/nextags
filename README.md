@@ -6,7 +6,7 @@ Skills oficiais da Nextags para montar agentes de atendimento com IA usando o Cl
 
 | Skill | Comando | O que faz |
 |---|---|---|
-| criar-agente-ia | `/nextags:criar-agente-ia` | Faz as perguntas sobre o seu negócio, coleta produtos ou serviços (site, cardápio, planilha) e entrega os 3 textos para colar na Nextags: Mensagem do sistema, Prompt da Ação e Ações de IA. Também ajusta o agente depois dos seus testes |
+| criar-agente-ia | `/nextags:criar-agente-ia` | Faz as perguntas sobre o seu negócio, coleta produtos ou serviços (site, cardápio, planilha) e entrega os 3 textos para colar na Nextags: Mensagem do sistema, Prompt da Ação e Ações de IA. Você escolhe como a venda termina: o agente pré-confirma e passa para a equipe, ou fecha sozinho com Pix, link de pagamento, checkout da loja ou registro no sistema. Também ajusta o agente depois dos seus testes |
 
 ## Instalar
 
@@ -35,5 +35,6 @@ Depois, feche e abra o Claude Code (ou digite `/reload-plugins` numa sessão abe
 
 ## Novidades
 
+- **1.2.0**: o dono do negócio escolhe como a venda (ou o agendamento) termina: o agente pré-confirma e passa para a equipe, ou fecha sozinho com o link de checkout da loja (MCP/API), um link de pagamento, a chave Pix (a equipe confere o comprovante) ou o registro direto no sistema; regras de segurança para cobrar (só links e chaves cadastrados, só o total aprovado, nunca dados de cartão, nunca confirmar pagamento por comprovante); regras prontas nas Ações de IA para cada modo, inclusive comprovante recebido e problema no fechamento (erro no link, no checkout ou no Pix); passo a passo para trocar o jeito de fechar de um agente pronto; o validador avisa quando o prompt mistura dois jeitos de fechar.
 - **1.1.0**: a skill passa a ser a única fonte de instruções sobre a Nextags (não consulta mais a central de ajuda, que tem páginas de versões anteriores, como as de respostas em JSON); regras de formatação de WhatsApp e de carrossel (texto + cards); etapa de ajustes depois dos testes, com tabela de sintomas; conversão de fotos PNG/WebP para JPG com fundo branco.
 - **1.0.0**: primeira versão.
