@@ -173,9 +173,18 @@ def main():
     if webp and re.search(r"whats\s?app|instagram", sp, re.I):
         avisos.append(f"{len(webp)} foto(s) em WebP: WhatsApp e Instagram só aceitam png/jpeg. "
                       "Converta com scripts/converter_fotos.py ou avise o cliente")
-    if re.search(r"JSON v[aá]lido|\{\"messages\"", sp):
-        avisos.append("prompt pede respostas em JSON: na Nextags atual isso não é necessário "
-                      "(marque o 'Tipo de resposta da IA' e dê instruções em texto)")
+    if re.search(r"JSON v[aá]lido|\{\s*\"messages\"|\"attachment\"\s*:|\"template_type\"|\"actions\"\s*:\s*\[", sp):
+        erros.append("o prompt pede respostas em JSON (formato de versão anterior da Nextags): "
+                     "escreva em texto quando enviar texto, imagem, botões ou carrossel; "
+                     "a Nextags converte pelo 'Tipo de resposta da IA'")
+    if re.search(r"carross", sp, re.I) and not re.search(
+            r"texto do carrossel|mensagem de texto[^\n]{0,160}(antes|logo depois|em seguida)", sp, re.I):
+        avisos.append("o prompt usa carrossel, mas não manda enviar a mensagem de Texto logo antes dele, "
+                      "na mesma resposta: sem isso, o WhatsApp mostra um '.' no lugar do texto")
+    for nome, t_ in textos.items():
+        if re.search(r"(ajuda|help|docs)\.nextags\.com\.br", t_):
+            avisos.append(f"{nome} tem link para a central de ajuda/documentação da Nextags: o agente "
+                          "não deve mandar o cliente final para lá nem seguir páginas de versões anteriores")
     if checar_urls:
         for u in urls:
             status, tipo = testar(u)
@@ -183,12 +192,17 @@ def main():
                 erros.append(f"URL não abre ({status}): {u}")
             elif re.search(r"\.(webp|jpe?g|png|gif)(\?|$)", u, re.I) and not tipo.startswith("image/"):
                 avisos.append(f"URL de foto não devolve imagem ({tipo}): {u}")
+            elif "webp" in tipo.lower() and not u.lower().split("?")[0].endswith(".webp"):
+                avisos.append(f"foto chega como WebP mesmo sem a extensão .webp (CDN): converta para JPG: {u}")
 
     relatorio(erros, avisos, info)
 
 
 def testar(url):
-    req = urllib.request.Request(url, method="GET", headers={"User-Agent": "Mozilla/5.0"})
+    # Accept com image/webp imita um navegador/servidor de mensagens: alguns CDNs (ex.: Shopify)
+    # só entregam WebP quando o cliente aceita, e o WhatsApp recusa WebP.
+    req = urllib.request.Request(url, method="GET", headers={
+        "User-Agent": "Mozilla/5.0", "Accept": "image/avif,image/webp,image/*,*/*;q=0.8"})
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
             return r.status, r.headers.get("Content-Type", "")

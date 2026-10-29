@@ -2,14 +2,18 @@
 """Converte as fotos do catálogo que o WhatsApp não aceita (WebP, GIF ou acima de 5 MB) para JPG.
 
 Uso:
-    python3 converter_fotos.py catalogo.json <pasta_saida> [--base-url https://site.com/fotos/]
+    python3 converter_fotos.py catalogo.json <pasta_saida> [--incluir-png] [--base-url https://site.com/fotos/]
 
 O que faz:
-  1. baixa cada foto WebP/GIF ou com mais de 5 MB para <pasta_saida>/originais/;
-  2. converte para JPG (no máximo 1600 px no lado maior, qualidade 85) em <pasta_saida>/jpg/;
+  1. baixa cada foto WebP/GIF ou com mais de 5 MB (e PNG, com --incluir-png) para <pasta_saida>/originais/;
+  2. converte para JPG com fundo branco (no máximo 1600 px no lado maior, qualidade 85) em <pasta_saida>/jpg/;
   3. grava <pasta_saida>/mapa_fotos.csv (produto, URL original, arquivo JPG).
 Com --base-url, grava também catalogo_jpg.json com as URLs novas
 (base-url + nome do arquivo). Use depois que o cliente subir os JPGs nesse endereço.
+
+Use --incluir-png quando houver PNG, principalmente de CDN de loja: o CDN da Shopify, por exemplo,
+entrega WebP para PNG com fundo transparente, e o WhatsApp recusa ("WebP image uploads are not
+currently supported"). Transparência vira fundo branco.
 
 Converte com Pillow, se estiver instalado. Se não estiver, usa o `sips` do macOS.
 """
@@ -42,7 +46,13 @@ def converter(origem, destino):
     try:
         from PIL import Image  # type: ignore
         with Image.open(origem) as im:
-            im = im.convert("RGB")
+            if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                rgba = im.convert("RGBA")
+                fundo = Image.new("RGB", rgba.size, (255, 255, 255))
+                fundo.paste(rgba, mask=rgba.split()[3])  # transparente vira branco, não preto
+                im = fundo
+            else:
+                im = im.convert("RGB")
             im.thumbnail((1600, 1600))
             im.save(destino, "JPEG", quality=85, optimize=True)
         return True
@@ -61,9 +71,15 @@ def converter(origem, destino):
     sys.exit(1)
 
 
-def precisa(url, caminho_local):
+def precisa(url, caminho_local, incluir_png):
     ext = url.lower().split("?")[0].rsplit(".", 1)[-1]
-    return ext in ("webp", "gif") or caminho_local.stat().st_size > LIMITE_WHATSAPP
+    if ext in ("webp", "gif") or (incluir_png and ext == "png"):
+        return True
+    with open(caminho_local, "rb") as f:
+        cabecalho = f.read(16)
+    if cabecalho[:4] == b"RIFF" and cabecalho[8:12] == b"WEBP":  # WebP com outra extensão
+        return True
+    return caminho_local.stat().st_size > LIMITE_WHATSAPP
 
 
 def main():
@@ -73,6 +89,7 @@ def main():
         sys.exit(2)
     catalogo_p, saida = Path(args[0]), Path(args[1])
     base = args[args.index("--base-url") + 1] if "--base-url" in args else None
+    incluir_png = "--incluir-png" in args
     dados = json.loads(catalogo_p.read_text(encoding="utf-8"))
     (saida / "originais").mkdir(parents=True, exist_ok=True)
     (saida / "jpg").mkdir(parents=True, exist_ok=True)
@@ -97,7 +114,7 @@ def main():
                     except Exception as e:  # noqa: BLE001
                         print(f"  falhou ao baixar {item['nome']}: {e}")
                         continue
-                    if not precisa(url, original):
+                    if not precisa(url, original, incluir_png):
                         continue
                     if not converter(original, saida / "jpg" / nome_jpg):
                         print(f"  falhou ao converter {item['nome']}")

@@ -1,10 +1,6 @@
 # Como a Nextags organiza um agente de IA
 
-Fonte dos campos: https://ajuda.nextags.com.br/campos-personalizados/campos-personalizados-campos-do-sistema-e-entrada-do-usuario
-
-Outras fontes (documentação oficial em Markdown; o índice completo está em https://ajuda.nextags.com.br/llms.txt):
-- IA Hub: https://ajuda.nextags.com.br/ia-hub/visao-geral-conheca-a-area-de-ia-hub-da-nextags.md
-- Limites de arquivo por canal: https://ajuda.nextags.com.br/configuracoes/tipos-de-arquivos-e-limites-nos-canais.md
+Esta referência resume, na versão atual da plataforma, tudo o que importa para montar e ajustar o agente: as 3 partes da configuração, as ações, os campos, os tipos de resposta, os limites por canal e os sintomas mais comuns nos testes. Use só ela. Não consulte a central de ajuda nem a documentação da Nextags, porque parte das páginas de lá é de versões anteriores (veja a seção 12 e "Fonte da verdade" no SKILL.md).
 
 ## Sumário
 1. As 3 partes da configuração
@@ -17,6 +13,8 @@ Outras fontes (documentação oficial em Markdown; o índice completo está em h
 8. Ferramentas de IA do IA Hub (Arquivos, leitores, Web Search, Funções, MCP)
 9. Configurações do modelo (modelo, max tokens, reasoning effort, verbosity)
 10. Palavras-chave
+11. Sintomas nos testes: causa e correção
+12. Versões anteriores: o que não usar
 
 ---
 
@@ -127,15 +125,15 @@ Na configuração do agente, o campo **"Tipo de resposta da IA"** é de escolha 
 - **Texto:** sempre ligado.
 - **Imagem | Vídeo | Áudio | Arquivo:** o agente envia mídia de verdade (a foto chega como imagem, não como link).
 - **Texto + Botões:** mensagem com botões clicáveis.
-- **Carrossel:** até **10 cards** com foto, título e subtítulo, roláveis para o lado.
+- **Carrossel:** até **10 cards** roláveis para o lado, cada um com foto, um texto curto e, se quiser, um botão de link.
 
-A plataforma faz a conversão por trás: o prompt **não** precisa (e não deve) pedir JSON nem formato técnico. Basta marcar os tipos que o agente pode usar e dizer no prompt **quando** usar cada um. A página antiga da Nextags sobre "JSON Agente" é de uma versão anterior e não é mais necessária.
+A plataforma faz a conversão por trás: o prompt **não** precisa (e não deve) pedir JSON nem formato técnico. Basta marcar os tipos que o agente pode usar e dizer no prompt, em texto, **quando** usar cada um (veja a seção 12).
 
 **Padrão recomendado: ligar os 4 tipos** (Texto, Imagem | Vídeo | Áudio | Arquivo, Texto + Botões e Carrossel) e, no prompt, dizer quando usar cada um. Desligue um tipo só se o cliente pedir, e aí tire do prompt a instrução correspondente.
 
 Quando usar cada tipo:
-- **Tem fotos de produto ou serviço?** Use **Imagem**. No prompt: "envie a foto como imagem, usando a URL do campo Foto do catálogo, com a legenda *Nome – tamanho – preço*". Sem esse tipo ligado, a foto só sai como link no texto.
-- **Carrossel:** bom para mostrar de 2 a 10 itens de uma vez (o limite é 10 cards) (um card por item com foto, nome e "tamanho – preço"). Peça ao cliente para testar no canal antes de depender dele, porque nem todo formato aparece igual em todos os canais.
+- **Tem fotos de produto ou serviço?** Use **Imagem**. No prompt: "envie a foto como imagem, usando a URL do campo Foto do catálogo, com a legenda *Nome* e o preço". O texto da resposta pode ir na própria legenda (uma mensagem só, em vez de foto + texto). Sem esse tipo ligado, a foto só sai como link no texto.
+- **Carrossel:** para mostrar de 2 a 10 itens de uma vez (o limite é 10 cards; de 3 a 6 costuma ficar melhor). Cada card tem a foto, um texto simples "Nome – R$ X,XX" (até 60 caracteres, sem asterisco) e, se houver link, um botão de URL (ex.: "Ver produto"). **O carrossel sempre vai com uma mensagem de Texto enviada logo antes, na mesma resposta** (o "texto do carrossel"): a Nextags junta as duas, e no WhatsApp o texto aparece em cima dos cards, como uma mensagem só. Sem essa mensagem de Texto, ou com o texto colocado dentro do carrossel, o WhatsApp mostra um "." no lugar do texto. O texto do carrossel diz o que foi separado e termina com a pergunta seguinte, e pode ter um 👇 no fim apontando para os cards.
 - **Texto + Botões:** para escolhas fechadas (Retirada / Entrega; Confirmar / Alterar). Use no máximo 3 botões com títulos curtos (até ~20 caracteres, limite do WhatsApp). Um clique num botão vale como resposta do cliente. Se o botão for de confirmação do resumo, ele conta como aprovação para a regra de pré-confirmação.
 - **Arquivo:** para mandar cardápio em PDF, tabela de preços ou contrato, quando houver URL pública do arquivo.
 
@@ -148,7 +146,7 @@ Limites oficiais por canal (doc "Tipos de arquivos e limites nos canais"):
 | Messenger | png, jpeg, gif, até 25 MB | mp4, ogg, avi, mov, webm, até 25 MB | aac, m4a, wav, mp4, até 25 MB | qualquer, até 25 MB |
 | Telegram | png, jpeg, webp, até 5 MB | mp4, até 20 MB | mpeg, até 20 MB | qualquer, até 20 MB |
 
-**WebP não está na lista do WhatsApp nem do Instagram.** Se as fotos do catálogo forem WebP (muito comum em sites WordPress), avise o cliente de que no WhatsApp elas provavelmente não vão chegar como imagem, mesmo com o tipo Imagem ligado. O caminho é converter para JPG e hospedar numa URL pública (`scripts/converter_fotos.py` faz a conversão; ver `coleta-catalogo.md`, seção 4). Confira também o peso: foto acima de 5 MB não vai no WhatsApp.
+**WebP não está na lista do WhatsApp nem do Instagram.** No teste, aparece o erro "Media upload error WebP image uploads are not currently supported" e a foto não chega, mesmo com o tipo Imagem ligado. Fotos WebP são muito comuns em sites WordPress. Também acontece com fotos que viram WebP no caminho: o CDN da Shopify, por exemplo, entrega WebP para PNG com fundo transparente, mesmo com `format=jpg` ou `format=pjpg` na URL. O caminho é converter para JPG com fundo branco e hospedar numa URL pública (`scripts/converter_fotos.py`, com `--incluir-png` quando houver PNG; ver `coleta-catalogo.md`, seção 4). Confira também o peso: foto acima de 5 MB não vai no WhatsApp.
 
 ## 7. Modelo de IA
 
@@ -217,3 +215,37 @@ Se o cliente mudar o modelo depois, peça para repetir os testes da Etapa 5 da s
 ## 10. Palavras-chave
 
 O IA Hub também tem **Palavras-chave**: palavras ou frases que disparam um fluxo ou uma mensagem pronta, sem passar pela IA. Se o cliente usa palavras-chave, confira se elas não brigam com o agente (ex.: a palavra "cardápio" disparar um fluxo enquanto o agente também responde). Na dúvida, deixe o agente cuidar da conversa e use palavras-chave só para campanhas específicas.
+
+## 11. Sintomas nos testes: causa e correção
+
+Quando o usuário voltar dos testes com um problema, procure aqui antes de qualquer outra coisa. Corrija o arquivo indicado, rode o validador e diga ao usuário qual arquivo recolar.
+
+| O que aparece no teste | Causa | Correção | Arquivo |
+|---|---|---|---|
+| Carrossel chega com um "." no lugar do texto | O carrossel foi enviado sem a mensagem de Texto antes, ou com o texto dentro do carrossel | Instruir: "envie, na mesma resposta, uma mensagem de Texto e logo depois a mensagem de Carrossel"; nada de texto dentro dos cards além do "Nome – R$ X,XX" | 1 |
+| "Media upload error WebP image uploads are not currently supported" | Foto em WebP (ou PNG que o CDN entrega como WebP) | Converter para JPG com fundo branco (`converter_fotos.py --incluir-png`) e trocar as URLs no catálogo | 1 |
+| Foto chega como link, não como imagem | Tipo de resposta Imagem desligado, ou o prompt manda colar a URL no texto | Ligar Imagem no agente e instruir "envie a foto como imagem" (variante 1 do modelo) | config. e 1 |
+| Aparecem asteriscos duplos, "#" ou "\|" soltos | O prompt usa Markdown de site (o modelo imita) | Tirar `**`, títulos e tabelas das partes que o agente copia; regra de formatação de WhatsApp | 1 |
+| Mensagens em bloco corrido, sem destaque | Falta a seção FORMATAÇÃO DAS MENSAGENS | Incluir a seção do modelo: linha em branco entre as partes, *negrito* em nome/preço/total, _itálico_ em observação curta, listas com "•" | 1 |
+| Botões não aparecem ou aparecem cortados | Mais de 3 botões, título longo ou tipo Texto + Botões desligado | No máximo 3 botões, títulos de até 20 caracteres, sem formatação; ligar o tipo | config. e 1 |
+| A transferência não dispara | A frase que o agente mandou não é a citada no "Quando" (paráfrase, emoji no meio, frase mudada) | Deixar a frase fixa idêntica nos arquivos 1 e 3, citada entre aspas no "Quando" | 1 e 3 |
+| A transferência dispara antes da hora | O "Quando" não exclui o simples envio do resumo, perguntas ou mudanças | Acrescentar o "Não vale se..." e a aprovação do último resumo | 3 (e 2) |
+| Transfere duas vezes | Função `connect_user_to_human` ligada junto com regras que transferem | Manter um mecanismo só (de preferência as Ações de IA) | config. |
+| O agente inventa preço, horário ou ingrediente | Dado ausente sem regra de `[A DEFINIR]`, ou descrição "de cabeça" | Marcar `[A DEFINIR]`/"a confirmar" e a regra de responder que a equipe confirma | 1 |
+| O agente não sabe se está aberto | `{{current_user_time}}` fora do prompt | Seção CONTEXTO DESTE ATENDIMENTO no final do prompt | 1 |
+| `{{campo}}` aparece cru na conversa | Nome do campo diferente do criado na Nextags | Conferir o nome exato do campo personalizado e ajustar os arquivos 1 e 3 | 1 e 3 |
+
+Se o sintoma não estiver na tabela, pergunte ao usuário o que ele esperava ver (um print ajuda) e ajuste a instrução em texto simples. Não procure a resposta na central de ajuda.
+
+## 12. Versões anteriores: o que não usar
+
+A central de ajuda e a documentação da Nextags ainda têm páginas de versões anteriores da plataforma. Se você, o usuário ou um material citar algo destes, saiba que **não vale mais**:
+
+| Versão anterior (não usar) | Como é hoje |
+|---|---|
+| "JSON Agente", "respostas do agente em JSON", "respostas elaboradas": o agente responde em JSON no padrão da Messenger Platform (chaves "messages", "attachment", "payload", "template_type", "recipient") | O prompt descreve em texto o que enviar, e a Nextags converte pelo **Tipo de resposta da IA** (Texto, Imagem/Vídeo/Áudio/Arquivo, Texto + Botões, Carrossel) |
+| Ações dentro do JSON da resposta (chave "actions": add_tag, set_field_value, transfer_conversation_to, assign_conversation, send_flow) | Ações configuradas nas **Ações de IA** (regras com "Quando" + ações do menu) |
+| Foto como URL colada no texto, para o WhatsApp mostrar a prévia do link | Foto enviada como imagem (tipo Imagem ligado), com legenda |
+| Prompt pedindo "retorne somente JSON válido" | O agente escreve mensagens normais, com a formatação de WhatsApp |
+
+Se o usuário pedir uma dessas formas, explique em uma frase que é de uma versão anterior e que hoje a Nextags faz isso sozinha. Só siga diferente se ele, já sabendo disso, insistir.

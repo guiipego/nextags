@@ -60,9 +60,9 @@ Comece pela página inicial e pela página de produtos ou cardápio, para entend
 Para cada URL de foto:
 - faça uma requisição e confira se volta HTTP 200 com `Content-Type` de imagem;
 - descarte placeholders de carregamento preguiçoso (`data:image/svg+xml...`) e use a URL original (no WordPress, `source_url`, sem o sufixo `-300x300`);
-- anote o formato e o peso. **O WhatsApp só aceita imagem png ou jpeg de até 5 MB**, e o Instagram png, jpeg ou gif de até 8 MB (limites oficiais da Nextags, ver `nextags-plataforma.md`, seção 6). WebP, comum em sites WordPress, não chega como imagem nesses canais. Se houver fotos fora do padrão:
+- anote o formato e o peso. **O WhatsApp só aceita imagem png ou jpeg de até 5 MB**, e o Instagram png, jpeg ou gif de até 8 MB (limites oficiais da Nextags, ver `nextags-plataforma.md`, seção 6). WebP, comum em sites WordPress, não chega como imagem nesses canais: no teste aparece "Media upload error WebP image uploads are not currently supported". Cuidado também com PNG servido por CDN: o da Shopify, por exemplo, entrega WebP para PNG com fundo transparente, mesmo com `format=jpg` ou `format=pjpg` na URL. Parâmetro de formato na URL não resolve. Se houver fotos fora do padrão:
   1. avise o cliente com a contagem (ex.: "54 das 62 fotos são WebP e não vão chegar como imagem no WhatsApp");
-  2. converta com `python3 scripts/converter_fotos.py catalogo.json fotos_convertidas/` (gera os JPGs e um `mapa_fotos.csv`);
+  2. converta com `python3 scripts/converter_fotos.py catalogo.json fotos_convertidas/` (gera os JPGs com fundo branco e um `mapa_fotos.csv`). Acrescente `--incluir-png` se houver PNG, principalmente vindo de CDN de loja;
   3. o cliente sobe os JPGs num endereço público (biblioteca de mídia do próprio site, a hospedagem dele ou um serviço de imagens). Depois, rode de novo com `--base-url <endereço>` para gerar o `catalogo_jpg.json` com as URLs novas e remonte o catálogo;
   4. enquanto isso não acontece, entregue com as URLs originais e deixe o aviso na lista de pendências;
 - anote **fotos repetidas** (dois produtos com a mesma URL) e acrescente ao item a observação "foto ilustrativa (a mesma do X)";
